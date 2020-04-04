@@ -4,7 +4,7 @@ use crate::constants::{MAXKEMCTLEN, MAXKEMPUBLEN, MAXKEMSSLEN};
 use crate::types::Kem;
 use crate::{
     cipherstate::{CipherState, CipherStates},
-    constants::{MAXDHLEN, MAXMSGLEN, PSKLEN, TAGLEN},
+    constants::{CIPHERKEYLEN, MAXDHLEN, MAXMSGLEN, PSKLEN, TAGLEN},
     error::{Error, InitStage, StateProblem},
     params::{DhToken, HandshakeTokens, MessagePatterns, NoiseParams, Token},
     stateless_transportstate::StatelessTransportState,
@@ -514,6 +514,14 @@ impl HandshakeState {
     /// Convert this `HandshakeState` into a `StatelessTransportState` without an internally stored nonce.
     pub fn into_stateless_transport_mode(self) -> Result<StatelessTransportState, Error> {
         Ok(self.try_into()?)
+    }
+
+    /// Converts this `HandshakeState` into two cipher keys common for both initiator and receiver.
+    pub fn into_cipher_keys(mut self) -> Result<([u8; CIPHERKEYLEN], [u8; CIPHERKEYLEN]), Error> {
+        if !self.is_handshake_finished() {
+            bail!(StateProblem::HandshakeNotFinished);
+        }
+        Ok(self.symmetricstate.export_cipher_keys())
     }
 }
 

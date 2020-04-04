@@ -136,6 +136,27 @@ impl SymmetricState {
         child2.set(&hkdf_output.1[..CIPHERKEYLEN], 0);
     }
 
+    pub fn export_cipher_keys(&mut self) -> ([u8; CIPHERKEYLEN], [u8; CIPHERKEYLEN]) {
+        let hash_len = self.hasher.hash_len();
+        let mut hkdf_output = ([0u8; MAXHASHLEN], [0u8; MAXHASHLEN]);
+        self.hasher.hkdf(
+            &self.inner.ck[..hash_len],
+            &[0u8; 0],
+            2,
+            &mut hkdf_output.0,
+            &mut hkdf_output.1,
+            &mut [],
+        );
+
+        // truncate
+
+        let mut k1 = [0; CIPHERKEYLEN];
+        let mut k2 = [0; CIPHERKEYLEN];
+        k1.copy_from_slice(&hkdf_output.0[..32]);
+        k2.copy_from_slice(&hkdf_output.1[..32]);
+        (k1, k2)
+    }
+
     pub(crate) fn checkpoint(&mut self) -> SymmetricStateData {
         self.inner
     }
